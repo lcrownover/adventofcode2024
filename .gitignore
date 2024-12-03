@@ -1,5 +1,7 @@
 input.txt
+input2.txt
 test_input.txt
+test_input2.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

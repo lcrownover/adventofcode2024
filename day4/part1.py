@@ -36,14 +36,8 @@ def find_adjacent_directional_letter_coords(
 
     if coord[0] < 0 or coord[1] < 0:
         return None
-    # print(
-    #     f"  Searching for letter '{target_letter}' in adjacent xy({coord[0]=},{coord[1]=}) direction {direction}"
-    # )
     letter = safe_get_coord_str(board, coord)
     if letter == target_letter:
-        # print(
-        #     f"  Found adjacent letter '{target_letter}' at ({coord[0]},{coord[1]}) anchored to ({xy[0]},{xy[1]})"
-        # )
         return coord
     return None
 
@@ -53,22 +47,18 @@ def find_xmass(board: list[list[str]], xy: tuple[int, int]) -> int:
     found = 0
 
     def find(xy, direction, letter_idx):
-        # print(
-        #     f"Searching for letter {letters[letter_idx]} anchored to ({xy[0]},{xy[1]}) direction: {direction}"
-        # )
         nonlocal found
-        # search adjacent to xy in direction for the letters[letter_idx]
         adjacent_letter_xy = find_adjacent_directional_letter_coords(
-            board, xy, direction, letters[letter_idx]
+            board=board,
+            xy=xy,
+            direction=direction,
+            target_letter=letters[letter_idx],
         )
         if not adjacent_letter_xy:
             return
         if letters[letter_idx] == "S":
             found += 1
             return
-        # print(
-        #     f"Found letter: {letters[letter_idx]} at ({adjacent_letter_xy[0]},{adjacent_letter_xy[1]})"
-        # )
         find(adjacent_letter_xy, direction, letter_idx + 1)
 
     for direction in ["ul", "uu", "ur", "ll", "rr", "dl", "dd", "dr"]:
@@ -79,12 +69,9 @@ def find_xmass(board: list[list[str]], xy: tuple[int, int]) -> int:
 
 count = 0
 xs = 0
-# print("Board:")
-# [print(row) for row in board]
 for y, row in enumerate(board):
-    for x, col in enumerate(row):
+    for x, _ in enumerate(row):
         if safe_get_coord_str(board, (x, y)) == "X":
-            # print(f"Found start of XMAS at ({x},{y})")
             count += find_xmass(board, (x, y))
 
 print(count)

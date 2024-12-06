@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import time
+import os
 import copy
 from enum import Enum
 from typing import Optional
@@ -115,44 +117,53 @@ class Guard:
 
     def patrol(self, board: "Board") -> None:
         while True:
+            os.system("clear")
+            # whole path
+            # board.print_guard_path(self)
+            # just cursor
+            board.print(self, show_path=False, show_loop_spots=True, show_vertices=True)
+            # print(self.visited())
+            time.sleep(0.2)
+
             print(f"Position: {self.position}")
+            print(self.vertices)
             next_pos = self.position.peek(self.facing)
-            # print(f"  Next position: {next_pos}")
-            # if next_pos in self._visited_spots:
-            #     print("  Found step I've already taken")
-            #     next_next_pos = next_pos.peek(self.facing)
-            #     print(f"  Found loop position at {next_next_pos}")
-            #     self.loop_positions.append(next_next_pos)
-            for v in self.vertices[:-1]:
-                try:
-                    to_pos = next_pos.to(v)
-                except:
-                    to_pos = None
-                if board.clear_path(next_pos, v):
-                    print(f"  clear path {next_pos} -> {v}")
-                    if to_pos == self.facing.next():
-                        print(f"  and direction {self.facing.next()}")
-                        next_next_pos = next_pos.peek(self.facing)
-                        if next_next_pos not in self.loop_positions:
-                            print(f"  previous vertices: {self.vertices}")
-                            print(
-                                f"  Next position {next_pos}, found clear path to previous vertex: {v}"
-                            )
-                            print(f"  Adding loop position: {next_next_pos}")
-                            self.loop_positions.append(next_next_pos)
+            if board.get_obstacle(next_pos) == Obstacle.NONE:
+                for v in self.vertices[:-1]:
+                    # print(f"    checking against vertex: {v}")
+                    # print(f"    looking for direction: {self.facing.next()}")
+                    try:
+                        to_dir = next_pos.to(v)
+                    except:
+                        to_dir = None
+                    # print(f"    to_dir = {to_dir}")
+                    if board.clear_path(next_pos, v):
+                        if to_dir == self.facing.next():
+                            # print(f"    clear path {next_pos} -> {v}")
+                            # print(f"    and direction {self.facing.next()}")
+                            next_next_pos = next_pos.peek(self.facing)
+                            if next_next_pos not in self.loop_positions:
+                                # print(f"    previous vertices: {self.vertices}")
+                                # print(
+                                #     f"  Next position {next_pos}, found clear path to previous vertex: {v}"
+                                # )
+                                # print(f"  Adding loop position: {next_next_pos}")
+                                self.loop_positions.append(next_next_pos)
             obstacle = board.get_obstacle(next_pos)
             match obstacle:
                 case Obstacle.CRATE:
                     print(f"  Turning {self.facing.next()}")
                     self.vertices.append(self.position)
                     self.facing = self.facing.next()
-                    next_pos = self.position.peek(self.facing)
+                    next_pos = self.position
                 case Obstacle.BOUNDARY:
-                    print("  Hit Boundary!")
+                    # print("  Hit Boundary!")
                     break
             self.position = next_pos
             if next_pos not in self._visited_spots:
                 self._visited_spots.append(next_pos)
+
+            # input()
 
     def visited(self) -> int:
         return len(self._visited_spots)
@@ -185,17 +196,21 @@ class Board:
 
     def clear_path(self, vertex1: Position, vertex2: Position) -> bool:
         coords = []
+        found_line = False
         if vertex1.x == vertex2.x:  # vertical line
+            found_line = True
             y_coords = range(min(vertex1.y, vertex2.y) + 1, max(vertex1.y, vertex2.y))
             coords = [Position(vertex1.x, y) for y in y_coords]
         if vertex1.y == vertex2.y:  # horizontal line
+            found_line = True
             x_coords = range(min(vertex1.x, vertex2.x) + 1, max(vertex1.x, vertex2.x))
             coords = [Position(x, vertex1.y) for x in x_coords]
-        if not coords:
+        if not found_line:
             return False
         for pos in coords:
             if self.get_obstacle(pos) != Obstacle.NONE:
                 return False
+        # print(f"    {coords}")
         return True
 
     def get_obstacle(self, position: Position) -> Obstacle:
@@ -248,22 +263,34 @@ class Board:
             # dont print the guard if its off the edge
             return None
 
-    def print(self, guard: Guard) -> None:
-        self.register_guard(guard)
-        print(self)
-        self.clear_guard(guard)
-
-    def print_guard_path(self, guard: Guard) -> None:
+    def print(
+        self,
+        guard: Guard,
+        show_path: bool = False,
+        show_loop_spots: bool = False,
+        show_vertices: bool = False,
+    ) -> None:
         copied_grid = copy.deepcopy(self.grid)
-        for pos in guard._visited_spots:
-            copied_grid[pos.y][pos.x] = "X"
+        if show_path:
+            for pos in guard._visited_spots:
+                copied_grid[pos.y][pos.x] = "X"
+        if show_loop_spots:
+            for pos in guard.loop_positions:
+                copied_grid[pos.y][pos.x] = "O"
+        if show_vertices:
+            for pos in guard.vertices:
+                if copied_grid[pos.y][pos.x] == "O":
+                    copied_grid[pos.y][pos.x] = "0"
+                else:
+                    copied_grid[pos.y][pos.x] = "+"
         copied_board = Board(copied_grid)
         copied_board.register_guard(guard)
         print(copied_board)
         print(guard.visited())
+        print(len(guard.loop_positions))
 
 
-with open("test_input.txt") as f:
+with open("input.txt") as f:
     grid = [list(line.strip()) for line in f.readlines() if line.strip()]
 
 board = Board(grid)
@@ -271,6 +298,6 @@ guard = board.find_guard()
 board.clear_guard(guard)
 guard.patrol(board)
 
-print(guard.loop_positions)
+print(len(guard.loop_positions))
 
 # board.print_guard_path(guard)
